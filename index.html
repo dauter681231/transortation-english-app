@@ -72,12 +72,6 @@
                 下一題挑戰
             </button>
         </div>
-        
-        <!-- 偵錯資訊顯示區 -->
-        <div id="debug-info" class="mt-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg hidden">
-            <p class="font-bold">偵錯訊息：</p>
-            <p id="debug-text">初始化中...</p>
-        </div>
     </main>
 
     <!-- 提示區 (顯示完整正確句子) -->
@@ -170,7 +164,7 @@
 
     let currentChallengeIndex = 0;
     let currentChallenge = null;
-    let dragData = {}; 
+    let dragData = {}; // 儲存當前被拖曳的項目資料
 
     const app = document.getElementById('app');
     const questionEl = document.getElementById('challenge-question');
@@ -180,43 +174,18 @@
     const messageText = document.getElementById('message-text');
     const fullSentenceDisplay = document.getElementById('full-sentence-display');
     const hintArea = document.getElementById('hint-area');
-    const debugInfo = document.getElementById('debug-info');
-    const debugText = document.getElementById('debug-text');
-
-    function logDebug(message, isError = false) {
-        debugText.textContent = message;
-        debugInfo.classList.remove('hidden');
-        if (isError) {
-            console.error("APP ERROR:", message);
-            debugInfo.classList.add('bg-red-200');
-        } else {
-            console.log("APP INFO:", message);
-            debugInfo.classList.remove('bg-red-200');
-        }
-    }
-
 
     // 初始化 App
     document.addEventListener('DOMContentLoaded', () => {
-        logDebug("INFO: DOM 結構載入完成，準備初始化應用程式...");
-        try {
-            if (lessonData.length === 0) {
-                logDebug("ERROR: 資料集 lessonData 為空。請檢查程式碼中 lessonData 陣列是否有內容。", true);
-                return;
-            }
-            logDebug(`INFO: 成功載入 ${lessonData.length} 個挑戰題目。`);
-            setChallenge(currentChallengeIndex);
-            logDebug("SUCCESS: 應用程式初始化完成，挑戰已顯示。");
-        } catch (error) {
-            logDebug(`FATAL ERROR: 應用程式初始化失敗。錯誤訊息: ${error.message}`, true);
-        }
+        console.log("資料載入成功：PDF內容已轉化為JSON結構。");
+        setChallenge(currentChallengeIndex);
     });
 
     // --- 2. 設置當前的挑戰題目 ---
     function setChallenge(index) {
         if (index >= lessonData.length) {
+            // 所有題目完成
             showResult('🎉 恭喜你！你完成了所有的交通語法挑戰！', 'success');
-            logDebug("INFO: 所有挑戰已完成。");
             return;
         }
 
@@ -226,10 +195,6 @@
         structureEl.innerHTML = '';
         optionsEl.innerHTML = '';
         hintArea.classList.add('hidden');
-        
-        // 隱藏偵錯訊息區，只在必要時顯示
-        debugInfo.classList.add('hidden');
-
 
         // 隨機組合選項
         const requiredOptions = [
@@ -271,7 +236,7 @@
         });
     }
 
-    // 獲取動詞的顯示文字 (略，與原版相同)
+    // 獲取動詞的顯示文字
     function getVerbText(key) {
         switch (key) {
             case 'take': return 'Take (搭乘)';
@@ -285,7 +250,7 @@
         }
     }
     
-    // 獲取動詞的圖示 (略，與原版相同)
+    // 獲取動詞的圖示
     function getVerbIcon(key) {
         switch (key) {
             case 'take': return '🖐️';
@@ -299,7 +264,7 @@
         }
     }
 
-    // 獲取選項的類型 (略，與原版相同)
+    // 獲取選項的類型
     function getVerbType(key) {
         if (['take', 'ride', 'get'].includes(key)) return '動詞';
         if (['by', 'on', 'off'].includes(key)) return '介系詞';
@@ -308,7 +273,7 @@
     }
 
 
-    // --- 3. 創建可拖曳的單字卡片 (略，與原版相同) ---
+    // --- 3. 創建可拖曳的單字卡片 ---
     function createDragItem(option) {
         const item = document.createElement('div');
         item.className = `drag-item card bg-purple-200 text-purple-800 p-3 rounded-lg text-center shadow-md text-sm md:text-base font-semibold`;
@@ -323,20 +288,19 @@
 
     // --- 4. 拖曳事件處理 (Drag and Drop Logic) ---
     function handleDragStart(e) {
-        // 偵測拖曳開始
-        logDebug(`DRAG START: 項目 ${e.target.dataset.key} 開始拖曳。`);
+        // 儲存正在拖曳的單字/動詞 key
         e.dataTransfer.setData('text/plain', e.target.dataset.key);
         dragData = {
             key: e.target.dataset.key,
             type: e.target.dataset.type,
             element: e.target
         };
-        setTimeout(() => e.target.classList.add('opacity-50'), 0); 
+        setTimeout(() => e.target.classList.add('opacity-50'), 0); // 視覺提示
     }
 
     function allowDrop(e) {
         e.preventDefault();
-        e.target.classList.add('bg-purple-100'); 
+        e.target.classList.add('bg-purple-100'); // 拖曳進入時的視覺提示
     }
 
     function handleDragLeave(e) {
@@ -349,23 +313,29 @@
         dropZone.classList.remove('bg-purple-100');
 
         const droppedKey = dragData.key;
-        logDebug(`DROP: 項目 ${droppedKey} 放置在 ${dropZone.dataset.targetType} 區域。`);
+        const targetType = dropZone.dataset.targetType; // 期望的類型
 
+        // 檢查拖曳目標是否符合語法類型（動詞/載具/介系詞/方式）
+        // 為了簡化，只要 dropZone 允許，就可以放入，主要檢查在 checkCompletion
+        
+        // 如果這個區域已經有東西了，把它放回選項區
         const existingItem = dropZone.querySelector('.drag-item');
         if (existingItem) {
             existingItem.classList.remove('opacity-50', 'correct-animation', 'incorrect-animation');
             optionsEl.appendChild(existingItem);
-            logDebug(`INFO: 區域原有項目 ${existingItem.dataset.key} 已移回選項區。`);
         }
 
+        // 移除拖曳來源的半透明效果
         dragData.element.classList.remove('opacity-50');
 
+        // 清空並放入新項目
         dropZone.innerHTML = '';
         dropZone.appendChild(dragData.element);
         dropZone.classList.remove('border-dashed');
         dropZone.classList.add('border-solid', 'border-purple-600', 'shadow-lg');
-        dropZone.textContent = ''; 
+        dropZone.textContent = ''; // 移除【動詞】/【載具】的提示文字
 
+        // 檢查是否所有目標區域都已填滿
         checkCompletion();
     }
 
@@ -374,52 +344,47 @@
         const dropZones = structureEl.querySelectorAll('.drop-zone');
         let filledCount = 0;
         let isCorrect = true;
-        let droppedKeys = {}; 
+        let droppedKeys = {}; // 收集所有放入的 key
 
         dropZones.forEach(zone => {
             const item = zone.querySelector('.drag-item');
             if (item) {
                 filledCount++;
+                const droppedKey = item.dataset.key;
                 const expectedType = zone.dataset.targetType;
-                droppedKeys[expectedType] = item.dataset.key;
+
+                // 紀錄拖曳的 key，例如 { '動詞': 'take', '載具': 'taxi' }
+                droppedKeys[expectedType] = droppedKey;
             }
         });
-        
-        logDebug(`CHECK: 已填入 ${filledCount} 個區域，總共 ${dropZones.length} 個區域。`);
 
+        // 只有當所有可拖曳區都填滿時才進行檢查
         if (filledCount === dropZones.length) {
-            logDebug(`CHECK: 正在檢查答案... 期待動詞/介詞: ${currentChallenge.targetVerb}, 期待載具/方式: ${currentChallenge.targetVehicle}`);
+            // 檢查單字的正確性
+            // 這裡需要針對每個題目判斷，因為有兩種填空 (targetVerb, targetVehicle/off/foot)
             
-            // 檢查 targetVerb (動詞/介系詞) 正確性
-            const verbKey = droppedKeys['動詞'] || droppedKeys['介系詞'];
-            if (verbKey !== currentChallenge.targetVerb) {
+            // 確保 targetVerb (動詞/介系詞) 正確
+            if ((droppedKeys['動詞'] || droppedKeys['介系詞']) !== currentChallenge.targetVerb) {
                 isCorrect = false;
             }
 
-            // 檢查 targetVehicle/方式 (載具/方式/介系詞片語) 正確性
-            const vehicleKey = droppedKeys['載具'] || droppedKeys['方式'];
-            if (vehicleKey !== currentChallenge.targetVehicle) {
+            // 確保 targetVehicle/方式 (載具/方式/介系詞片語) 正確
+            if ((droppedKeys['載具'] || droppedKeys['方式'] || droppedKeys['介系詞']) !== currentChallenge.targetVehicle) {
                  isCorrect = false;
             }
-            
-            // 額外檢查: 針對 get off，要確認 get 和 off 都存在
-            if (currentChallenge.targetVerb === 'get' && currentChallenge.targetVehicle === 'off') {
-                if (droppedKeys['動詞'] !== 'get' || droppedKeys['介系詞'] !== 'off') {
-                    isCorrect = false;
-                }
-            }
-
 
             // 顯示結果
-            const resultType = isCorrect ? 'success' : 'error';
-            const resultText = isCorrect ? `✅ 太棒了！正確答案是：${currentChallenge.fullSentence}` : `❌ 答錯了，請再想想！提示：${currentChallenge.rule}`;
-            showResult(resultText, resultType);
-            
-            const items = structureEl.querySelectorAll('.drag-item');
+            const correctItems = structureEl.querySelectorAll('.drag-item');
             if (isCorrect) {
-                items.forEach(item => item.classList.add('correct-animation'));
+                showResult(`✅ 太棒了！正確答案是：${currentChallenge.fullSentence}`, 'success');
+                // 動畫效果：正確進入
+                correctItems.forEach(item => item.classList.add('correct-animation'));
             } else {
-                items.forEach(item => item.classList.add('incorrect-animation'));
+                showResult(`❌ 答錯了，請再想想！提示：${currentChallenge.rule}`, 'error');
+                // 動畫效果：錯誤震動
+                correctItems.forEach(item => item.classList.add('incorrect-animation'));
+                
+                // 延遲後顯示正確句子
                 setTimeout(() => {
                     fullSentenceDisplay.textContent = `完整正確句子：${currentChallenge.fullSentence}`;
                     hintArea.classList.remove('hidden');
@@ -428,7 +393,7 @@
         }
     }
 
-    // 顯示結果訊息 (略，與原版相同)
+    // 顯示結果訊息
     function showResult(text, type) {
         messageText.textContent = text;
         messageBox.classList.remove('hidden');
@@ -439,7 +404,7 @@
         }
     }
 
-    // 進入下一題 (略，與原版相同)
+    // 進入下一題
     function nextChallenge() {
         currentChallengeIndex++;
         setChallenge(currentChallengeIndex);
@@ -448,4 +413,3 @@
 </script>
 </body>
 </html>
-
