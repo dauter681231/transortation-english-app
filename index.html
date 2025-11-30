@@ -297,6 +297,7 @@
     let dragData = {};
 
     // 元素參考 (Spelling)
+    const flashcardEl = document.getElementById('flashcard'); // 獲取最外層元素
     const cardInner = document.querySelector('#mode-spelling .flashcard-inner');
     const meaningEl = document.getElementById('chinese-meaning');
     const hintEl = document.getElementById('hint-text');
@@ -324,6 +325,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         switchMode('menu');
+        // *** 修正: 在初始化時就綁定卡片點擊事件 ***
+        if (flashcardEl) {
+            flashcardEl.addEventListener('click', flipCard);
+        }
     });
 
     function switchMode(mode) {
