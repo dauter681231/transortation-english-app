@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交通工具語法挑戰</title>
+    <!-- 載入 Tailwind CSS 框架 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 設定字體為 Inter，並為遊戲區塊添加背景和陰影 */
+        body { font-family: 'Inter', sans-serif; background-color: #f7ffee; }
+        .card { transition: all 0.3s ease-in-out; }
+        .drop-zone { border: 3px dashed #a78bfa; min-height: 8rem; }
+        .drag-item {
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+            will-change: transform;
+        }
+        .drag-item:hover { transform: scale(1.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .drag-item.correct-animation {
+            animation: bounce-in 0.8s ease-out;
+        }
+        .drag-item.incorrect-animation {
+            animation: shake 0.5s;
+        }
+
+        /* 動畫效果：正確的彈跳進入 */
+        @keyframes bounce-in {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* 動畫效果：錯誤的震動 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-3xl shadow-2xl">
+    <!-- 標題區塊 -->
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-purple-700 mb-2">🚀 交通工具語法挑戰 🚌</h1>
+        <p class="text-lg text-gray-500">將交通工具單字和搭配詞拖曳到正確的句子結構中！</p>
+    </header>
+
+    <!-- 主遊戲區塊 -->
+    <main>
+        <div id="scenario-display" class="bg-indigo-50 p-6 rounded-2xl mb-8 border-l-4 border-indigo-400">
+            <p class="text-xl font-semibold text-gray-700 mb-4" id="challenge-question">載入中...</p>
+            <!-- 語法結構拖曳區 (Drop Zone) -->
+            <div id="sentence-structure" class="text-3xl font-bold text-gray-800 flex flex-wrap items-center space-x-2 md:space-x-4">
+                <!-- 句子結構會在這裡動態載入 -->
+            </div>
+        </div>
+
+        <!-- 拖曳選項區 (Drag Items) -->
+        <div id="options-container" class="bg-gray-100 p-6 rounded-2xl shadow-inner">
+            <h2 class="text-xl font-bold text-gray-600 mb-4">選項：</h2>
+            <div id="vehicle-options" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- 單字卡片會在這裡動態載入 -->
+            </div>
+        </div>
+
+        <!-- 結果與訊息提示區 -->
+        <div id="message-box" class="mt-8 p-4 text-center rounded-xl transition duration-500 hidden">
+            <p class="text-2xl font-bold" id="message-text"></p>
+            <button onclick="nextChallenge()" class="mt-4 px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition shadow-lg">
+                下一題挑戰
+            </button>
+        </div>
+    </main>
+
+    <!-- 提示區 (顯示完整正確句子) -->
+    <div id="hint-area" class="mt-4 p-4 text-sm text-gray-600 bg-gray-100 rounded-lg hidden">
+        <p id="full-sentence-display" class="font-medium"></p>
+    </div>
+
+</div>
+
+<script>
+    // --- 1. 結構化資料 (從 PDF 內容轉換) ---
+    const lessonData = [
+      {
+        "id": 1,
+        "question": "他們總是 [__] [__] 去那間博物館。",
+        "structure": ["They always go to the museum", "【介系詞】", "【載具】", "."],
+        "targetVerb": "by",
+        "targetVehicle": "metro",
+        "vehicleText": "Metro (捷運)",
+        "icon": "🚇",
+        "rule": "介系詞用法：使用 'by' 時，後面直接接交通工具，中間不加冠詞 a/the。",
+        "fullSentence": "They always go to the museum by metro."
+      },
+      {
+        "id": 2,
+        "question": "我們可以在這裡 [__] [__] 計程車回家嗎？",
+        "structure": ["Can we", "【動詞】", "a", "【載具】", "home here?"],
+        "targetVerb": "take",
+        "targetVehicle": "taxi",
+        "vehicleText": "Taxi (計程車)",
+        "icon": "🚕",
+        "rule": "動詞用法：使用 'take' 或 'catch' 時，後面需要加上冠詞 a/the 再接交通工具。",
+        "fullSentence": "Can we take a taxi home here?"
+      },
+      {
+        "id": 3,
+        "question": "我的朋友喜歡 [__] [__] 單車沿著河岸走。",
+        "structure": ["My friend likes to", "【動詞】", "his", "【載具】", "along the bank."],
+        "targetVerb": "ride",
+        "targetVehicle": "bike",
+        "vehicleText": "Bike (單車)",
+        "icon": "🚲",
+        "rule": "動詞用法：騎乘兩輪或有座位的交通工具時，常使用 'ride'。",
+        "fullSentence": "My friend likes to ride his bike along the bank."
+      },
+      {
+        "id": 4,
+        "question": "花店很近，我們 [__] [__] 去吧！",
+        "structure": ["The shop is close. Let's go there", "【介系詞】", "【方式】", "."],
+        "targetVerb": "on",
+        "targetVehicle": "foot",
+        "vehicleText": "Foot (走路)",
+        "icon": "🚶",
+        "rule": "特殊用法：走路（步行）是一個固定片語，必須使用 'on foot'。",
+        "fullSentence": "The shop is close. Let's go there on foot."
+      },
+      {
+        "id": 5,
+        "question": "我們需要在圖書館 [__] [__] 這輛公車。",
+        "structure": ["We need to", "【動詞】", "【介系詞】", "the bus at the library."],
+        "targetVerb": "get",
+        "targetVehicle": "off",
+        "vehicleText": "Off (下車)",
+        "icon": "⬇️",
+        "rule": "動詞片語：'Get off' 用於下大型交通工具 (公車、火車、捷運)。",
+        "fullSentence": "We need to get off the bus at the library."
+      },
+      {
+        "id": 6,
+        "question": "你今天早上是 [__] [__] 船去印尼的嗎？",
+        "structure": ["Did you go to Indonesia", "【介系詞】", "【載具】", "this morning?"],
+        "targetVerb": "by",
+        "targetVehicle": "ship",
+        "vehicleText": "Ship (輪船)",
+        "icon": "🚢",
+        "rule": "介系詞用法：詢問交通方式時，常使用 'by' + 交通工具。",
+        "fullSentence": "Did you go to Indonesia by ship this morning?"
+      }
+    ];
+
+    // 其他選項 (干擾項，包含來自 PDF 的其他單字：scooter)
+    const extraOptions = [
+        { key: "drive", text: "Drive (開車)", icon: "🚗", type: 'verb' },
+        { key: "with", text: "With (和)", icon: "🤝", type: 'verb' },
+        { key: "a", text: "A (一個)", icon: "1️⃣", type: 'article' },
+        { key: "on", text: "On (在上)", icon: "👆", type: 'verb' }, // for get on
+        { key: "go", text: "Go (去)", icon: "🏃", type: 'verb' },
+        { key: "scooter", text: "Scooter (機車)", icon: "🛵", type: 'vehicle' }
+    ];
+
+    let currentChallengeIndex = 0;
+    let currentChallenge = null;
+    let dragData = {}; // 儲存當前被拖曳的項目資料
+
+    const app = document.getElementById('app');
+    const questionEl = document.getElementById('challenge-question');
+    const structureEl = document.getElementById('sentence-structure');
+    const optionsEl = document.getElementById('vehicle-options');
+    const messageBox = document.getElementById('message-box');
+    const messageText = document.getElementById('message-text');
+    const fullSentenceDisplay = document.getElementById('full-sentence-display');
+    const hintArea = document.getElementById('hint-area');
+
+    // 初始化 App
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("資料載入成功：PDF內容已轉化為JSON結構。");
+        setChallenge(currentChallengeIndex);
+    });
+
+    // --- 2. 設置當前的挑戰題目 ---
+    function setChallenge(index) {
+        if (index >= lessonData.length) {
+            // 所有題目完成
+            showResult('🎉 恭喜你！你完成了所有的交通語法挑戰！', 'success');
+            return;
+        }
+
+        currentChallenge = lessonData[index];
+        questionEl.textContent = currentChallenge.question;
+        messageBox.classList.add('hidden');
+        structureEl.innerHTML = '';
+        optionsEl.innerHTML = '';
+        hintArea.classList.add('hidden');
+
+        // 隨機組合選項
+        const requiredOptions = [
+            { key: currentChallenge.targetVehicle, text: currentChallenge.vehicleText, icon: currentChallenge.icon, type: 'vehicle' },
+            { key: currentChallenge.targetVerb, text: getVerbText(currentChallenge.targetVerb), icon: getVerbIcon(currentChallenge.targetVerb), type: getVerbType(currentChallenge.targetVerb) }
+        ];
+
+        // 將所有選項混合並隨機排列
+        const allOptions = [...requiredOptions, ...extraOptions]
+            .filter((opt, i, self) =>
+                i === self.findIndex((t) => t.key === opt.key) // 去重
+            )
+            .sort(() => 0.5 - Math.random());
+
+        // 渲染語法結構
+        currentChallenge.structure.forEach(part => {
+            const span = document.createElement('span');
+            span.className = 'py-2';
+            if (part.includes('【')) {
+                // 這是拖曳目標區
+                span.className = 'drop-zone bg-white rounded-xl shadow-inner flex items-center justify-center p-2 min-w-[6rem] min-h-[3.5rem] border-2 border-dashed border-purple-400 hover:border-purple-600 transition-all text-xl md:text-2xl';
+                span.dataset.targetType = part.replace(/[【】]/g, ''); // 例如：'動詞' 或 '載具'
+                span.addEventListener('dragover', allowDrop);
+                span.addEventListener('dragleave', handleDragLeave);
+                span.addEventListener('drop', handleDrop);
+                span.textContent = part;
+            } else {
+                // 這是固定文字
+                span.className = 'text-2xl md:text-3xl font-bold text-indigo-700 py-2';
+                span.textContent = part;
+            }
+            structureEl.appendChild(span);
+        });
+
+        // 渲染拖曳選項
+        allOptions.forEach(option => {
+            const item = createDragItem(option);
+            optionsEl.appendChild(item);
+        });
+    }
+
+    // 獲取動詞的顯示文字
+    function getVerbText(key) {
+        switch (key) {
+            case 'take': return 'Take (搭乘)';
+            case 'ride': return 'Ride (騎乘)';
+            case 'by': return 'By (藉由)';
+            case 'on': return 'On (在...上)';
+            case 'get': return 'Get (得到)';
+            case 'off': return 'Off (離開)';
+            case 'foot': return 'Foot (腳)';
+            default: return key.toUpperCase();
+        }
+    }
+    
+    // 獲取動詞的圖示
+    function getVerbIcon(key) {
+        switch (key) {
+            case 'take': return '🖐️';
+            case 'ride': return '🚴';
+            case 'by': return '⏩';
+            case 'on': return '⬆️';
+            case 'get': return '➡️';
+            case 'off': return '⬇️';
+            case 'foot': return '🦶';
+            default: return '❓';
+        }
+    }
+
+    // 獲取選項的類型
+    function getVerbType(key) {
+        if (['take', 'ride', 'get'].includes(key)) return '動詞';
+        if (['by', 'on', 'off'].includes(key)) return '介系詞';
+        if (['foot', 'metro', 'taxi', 'bike', 'ship', 'scooter'].includes(key)) return '載具';
+        return '其他';
+    }
+
+
+    // --- 3. 創建可拖曳的單字卡片 ---
+    function createDragItem(option) {
+        const item = document.createElement('div');
+        item.className = `drag-item card bg-purple-200 text-purple-800 p-3 rounded-lg text-center shadow-md text-sm md:text-base font-semibold`;
+        item.draggable = true;
+        item.textContent = `${option.icon} ${option.text}`;
+        item.dataset.key = option.key;
+        item.dataset.type = option.type;
+
+        item.addEventListener('dragstart', handleDragStart);
+        return item;
+    }
+
+    // --- 4. 拖曳事件處理 (Drag and Drop Logic) ---
+    function handleDragStart(e) {
+        // 儲存正在拖曳的單字/動詞 key
+        e.dataTransfer.setData('text/plain', e.target.dataset.key);
+        dragData = {
+            key: e.target.dataset.key,
+            type: e.target.dataset.type,
+            element: e.target
+        };
+        setTimeout(() => e.target.classList.add('opacity-50'), 0); // 視覺提示
+    }
+
+    function allowDrop(e) {
+        e.preventDefault();
+        e.target.classList.add('bg-purple-100'); // 拖曳進入時的視覺提示
+    }
+
+    function handleDragLeave(e) {
+        e.target.classList.remove('bg-purple-100');
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const dropZone = e.currentTarget;
+        dropZone.classList.remove('bg-purple-100');
+
+        const droppedKey = dragData.key;
+        const targetType = dropZone.dataset.targetType; // 期望的類型
+
+        // 檢查拖曳目標是否符合語法類型（動詞/載具/介系詞/方式）
+        // 為了簡化，只要 dropZone 允許，就可以放入，主要檢查在 checkCompletion
+        
+        // 如果這個區域已經有東西了，把它放回選項區
+        const existingItem = dropZone.querySelector('.drag-item');
+        if (existingItem) {
+            existingItem.classList.remove('opacity-50', 'correct-animation', 'incorrect-animation');
+            optionsEl.appendChild(existingItem);
+        }
+
+        // 移除拖曳來源的半透明效果
+        dragData.element.classList.remove('opacity-50');
+
+        // 清空並放入新項目
+        dropZone.innerHTML = '';
+        dropZone.appendChild(dragData.element);
+        dropZone.classList.remove('border-dashed');
+        dropZone.classList.add('border-solid', 'border-purple-600', 'shadow-lg');
+        dropZone.textContent = ''; // 移除【動詞】/【載具】的提示文字
+
+        // 檢查是否所有目標區域都已填滿
+        checkCompletion();
+    }
+
+    // 檢查完成度和正確性
+    function checkCompletion() {
+        const dropZones = structureEl.querySelectorAll('.drop-zone');
+        let filledCount = 0;
+        let isCorrect = true;
+        let droppedKeys = {}; // 收集所有放入的 key
+
+        dropZones.forEach(zone => {
+            const item = zone.querySelector('.drag-item');
+            if (item) {
+                filledCount++;
+                const droppedKey = item.dataset.key;
+                const expectedType = zone.dataset.targetType;
+
+                // 紀錄拖曳的 key，例如 { '動詞': 'take', '載具': 'taxi' }
+                droppedKeys[expectedType] = droppedKey;
+            }
+        });
+
+        // 只有當所有可拖曳區都填滿時才進行檢查
+        if (filledCount === dropZones.length) {
+            // 檢查單字的正確性
+            // 這裡需要針對每個題目判斷，因為有兩種填空 (targetVerb, targetVehicle/off/foot)
+            
+            // 確保 targetVerb (動詞/介系詞) 正確
+            if ((droppedKeys['動詞'] || droppedKeys['介系詞']) !== currentChallenge.targetVerb) {
+                isCorrect = false;
+            }
+
+            // 確保 targetVehicle/方式 (載具/方式/介系詞片語) 正確
+            if ((droppedKeys['載具'] || droppedKeys['方式'] || droppedKeys['介系詞']) !== currentChallenge.targetVehicle) {
+                 isCorrect = false;
+            }
+
+            // 顯示結果
+            const correctItems = structureEl.querySelectorAll('.drag-item');
+            if (isCorrect) {
+                showResult(`✅ 太棒了！正確答案是：${currentChallenge.fullSentence}`, 'success');
+                // 動畫效果：正確進入
+                correctItems.forEach(item => item.classList.add('correct-animation'));
+            } else {
+                showResult(`❌ 答錯了，請再想想！提示：${currentChallenge.rule}`, 'error');
+                // 動畫效果：錯誤震動
+                correctItems.forEach(item => item.classList.add('incorrect-animation'));
+                
+                // 延遲後顯示正確句子
+                setTimeout(() => {
+                    fullSentenceDisplay.textContent = `完整正確句子：${currentChallenge.fullSentence}`;
+                    hintArea.classList.remove('hidden');
+                }, 1000);
+            }
+        }
+    }
+
+    // 顯示結果訊息
+    function showResult(text, type) {
+        messageText.textContent = text;
+        messageBox.classList.remove('hidden');
+        if (type === 'success') {
+            messageBox.className = 'mt-8 p-4 text-center rounded-xl transition duration-500 bg-green-100 text-green-700 shadow-xl';
+        } else {
+            messageBox.className = 'mt-8 p-4 text-center rounded-xl transition duration-500 bg-red-100 text-red-700 shadow-xl';
+        }
+    }
+
+    // 進入下一題
+    function nextChallenge() {
+        currentChallengeIndex++;
+        setChallenge(currentChallengeIndex);
+    }
+
+</script>
+</body>
+</html>
