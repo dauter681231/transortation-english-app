@@ -3,54 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>交通工具語法挑戰</title>
+    <title>國中英語雙模式挑戰平台</title>
     <!-- 載入 Tailwind CSS 框架 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 設定字體為 Inter，並為遊戲區塊添加背景和陰影 */
+        /* 設定字體和整體背景 */
         body { font-family: 'Inter', sans-serif; background-color: #f7ffee; }
-        .card { transition: all 0.3s ease-in-out; }
-        .drop-zone { border: 3px dashed #a78bfa; min-height: 8rem; }
-        .drag-item {
-            cursor: grab;
-            transition: transform 0.2s, box-shadow 0.2s;
-            will-change: transform;
-        }
-        .drag-item:hover { transform: scale(1.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .drag-item.correct-animation {
-            animation: bounce-in 0.8s ease-out;
-        }
-        .drag-item.incorrect-animation {
-            animation: shake 0.5s;
-        }
+        .app-container { min-height: 80vh; }
 
-        /* 動畫效果：正確的彈跳進入 */
-        @keyframes bounce-in {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        /* 卡片翻轉動畫 - 單字測驗 */
+        .flashcard { perspective: 1000px; cursor: pointer; }
+        .flashcard-inner {
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            height: 100%;
         }
+        .flashcard-front, .flashcard-back {
+            backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .flashcard-front { background-color: #8b5cf6; color: white; z-index: 2; }
+        .flashcard-back { background-color: #ffffff; color: #1f2937; transform: rotateY(180deg); }
+        .flipped .flashcard-inner { transform: rotateY(180deg); }
 
-        /* 動畫效果：錯誤的震動 */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
+        /* 打字機效果 - 單字測驗 */
+        .typewriter-text {
+            border-right: .15em solid #f97316;
+            animation: 
+                typing 3s steps(30, end) forwards,
+                blink-caret .75s step-end infinite;
+            white-space: nowrap;
+            overflow: hidden;
         }
+        @keyframes typing { from { width: 0 } to { width: 100% } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #f97316; } }
+
+        /* 拖曳動畫 - 文法填空 */
+        .drop-zone { min-height: 3.5rem; border: 3px dashed #a78bfa; transition: all 0.2s; }
+        .drag-item { cursor: grab; transition: transform 0.2s, box-shadow 0.2s; }
+        .drag-item.correct-animation { animation: bounce-in 0.8s ease-out; }
+        .drag-item.incorrect-animation { animation: shake 0.5s; }
+        @keyframes bounce-in { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8 min-h-screen">
 
-<div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-3xl shadow-2xl">
-    <!-- 標題區塊 -->
-    <header class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold text-purple-700 mb-2">🚀 交通工具語法挑戰 🚌</h1>
-        <p class="text-lg text-gray-500">將交通工具單字和搭配詞拖曳到正確的句子結構中！</p>
+<div id="app" class="max-w-4xl mx-auto bg-white p-6 rounded-3xl shadow-2xl app-container">
+    
+    <!-- 標題與模式切換區 -->
+    <header class="text-center mb-8 border-b-2 pb-4">
+        <h1 class="text-4xl font-extrabold text-purple-700 mb-2">🎓 國中英語挑戰平台 🚀</h1>
+        <p class="text-lg text-gray-600">Unit 5: How Do We Go to the Hotel?</p>
+        
+        <!-- 模式切換按鈕 -->
+        <div id="mode-switcher" class="mt-4 flex justify-center space-x-4">
+            <button onclick="switchMode('menu')" id="btn-menu" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition">
+                🏡 選單
+            </button>
+            <button onclick="switchMode('spelling')" id="btn-spelling" class="px-4 py-2 bg-purple-600 text-white font-semibold rounded-full hover:bg-purple-700 transition">
+                🧠 單字測驗
+            </button>
+            <button onclick="switchMode('grammar')" id="btn-grammar" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-full hover:bg-indigo-700 transition">
+                📝 文法填空
+            </button>
+        </div>
     </header>
 
-    <!-- 主遊戲區塊 -->
-    <main>
-        <div id="scenario-display" class="bg-indigo-50 p-6 rounded-2xl mb-8 border-l-4 border-indigo-400">
-            <p class="text-xl font-semibold text-gray-700 mb-4" id="challenge-question">載入中...</p>
+    <!-- 1. 主選單模式 (Home Screen) -->
+    <section id="mode-menu" class="mode-view">
+        <div class="text-center p-10 bg-blue-50 rounded-2xl shadow-inner">
+            <h2 class="text-3xl font-bold text-blue-800 mb-4">歡迎來到 Unit 5 挑戰！</h2>
+            <p class="text-xl text-gray-700 mb-8">請選擇你想強化的學習模式：</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button onclick="switchMode('spelling')" class="p-6 bg-purple-100 text-purple-800 rounded-xl shadow-lg hover:shadow-xl transition transform hover:scale-105">
+                    <span class="text-4xl">✍️</span>
+                    <p class="text-2xl font-bold mt-2">單字拼寫機</p>
+                    <p class="text-sm mt-1">記憶訓練：聽中文，拼寫英文單字</p>
+                </button>
+                <button onclick="switchMode('grammar')" class="p-6 bg-indigo-100 text-indigo-800 rounded-xl shadow-lg hover:shadow-xl transition transform hover:scale-105">
+                    <span class="text-4xl">🚌</span>
+                    <p class="text-2xl font-bold mt-2">交通文法填空</p>
+                    <p class="text-sm mt-1">應用訓練：學習 by/take/ride/on foot 語法</p>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. 單字測驗模式 (Spelling Quiz) -->
+    <section id="mode-spelling" class="mode-view hidden p-4">
+        <h2 class="text-3xl font-bold text-purple-600 mb-6 text-center">🧠 單字拼寫挑戰</h2>
+        <p class="text-sm font-semibold mb-4 text-center">
+            目前進度: <span id="progress-display">0/10</span>
+        </p>
+        
+        <!-- 閃卡顯示區 -->
+        <div id="flashcard" class="flashcard w-full h-48 mb-8" onclick="flipCard()">
+            <div class="flashcard-inner relative">
+                <!-- 正面：顯示中文意思和提示 -->
+                <div class="flashcard-front">
+                    <div class="text-center">
+                        <p class="text-xl mb-2 font-light">點擊卡片查看意思</p>
+                        <h2 class="text-5xl font-black mb-4" id="chinese-meaning"></h2>
+                        <p class="text-base italic opacity-80" id="hint-text"></p>
+                    </div>
+                </div>
+                <!-- 背面：顯示拼字結果 -->
+                <div class="flashcard-back">
+                    <p class="text-3xl font-bold" id="spelling-result"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 輸入區 -->
+        <div class="flex flex-col space-y-4">
+            <input type="text" id="spelling-input" class="w-full px-4 py-3 border-4 border-purple-400 rounded-xl text-2xl font-semibold focus:outline-none focus:border-purple-600 transition" placeholder="在此輸入英文單字..." disabled>
+            <button id="check-button" onclick="checkSpelling()" class="w-full py-3 bg-green-500 text-white font-bold text-xl rounded-xl shadow-lg hover:bg-green-600 transition" disabled>
+                檢查拼字
+            </button>
+            <button id="next-button" onclick="nextWord()" class="w-full py-3 bg-purple-600 text-white font-bold text-xl rounded-xl shadow-lg hover:bg-purple-700 transition hidden">
+                下一題 (Next)
+            </button>
+        </div>
+
+        <!-- 訊息提示區 -->
+        <div id="message-box" class="mt-6 p-4 text-center rounded-xl transition duration-500 hidden">
+            <p class="text-lg font-semibold" id="message-text"></p>
+        </div>
+    </section>
+
+    <!-- 3. 文法填空模式 (Grammar Fill-in) -->
+    <section id="mode-grammar" class="mode-view hidden p-4">
+        <h2 class="text-3xl font-bold text-indigo-600 mb-6 text-center">📝 交通文法填空</h2>
+
+        <div id="grammar-challenge" class="bg-indigo-50 p-6 rounded-2xl mb-8 border-l-4 border-indigo-400">
+            <p class="text-xl font-semibold text-gray-700 mb-4" id="grammar-question">載入中...</p>
             <!-- 語法結構拖曳區 (Drop Zone) -->
             <div id="sentence-structure" class="text-3xl font-bold text-gray-800 flex flex-wrap items-center space-x-2 md:space-x-4">
                 <!-- 句子結構會在這裡動態載入 -->
@@ -58,38 +153,50 @@
         </div>
 
         <!-- 拖曳選項區 (Drag Items) -->
-        <div id="options-container" class="bg-gray-100 p-6 rounded-2xl shadow-inner">
-            <h2 class="text-xl font-bold text-gray-600 mb-4">選項：</h2>
+        <div id="grammar-options" class="bg-gray-100 p-6 rounded-2xl shadow-inner">
+            <h3 class="text-xl font-bold text-gray-600 mb-4">選項：</h3>
             <div id="vehicle-options" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 <!-- 單字卡片會在這裡動態載入 -->
             </div>
         </div>
 
         <!-- 結果與訊息提示區 -->
-        <div id="message-box" class="mt-8 p-4 text-center rounded-xl transition duration-500 hidden">
-            <p class="text-2xl font-bold" id="message-text"></p>
-            <button onclick="nextChallenge()" class="mt-4 px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition shadow-lg">
+        <div id="grammar-message-box" class="mt-8 p-4 text-center rounded-xl transition duration-500 hidden">
+            <p class="text-2xl font-bold" id="grammar-message-text"></p>
+            <button onclick="nextGrammarChallenge()" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-lg">
                 下一題挑戰
             </button>
         </div>
-        
-        <!-- 偵錯資訊顯示區 -->
-        <div id="debug-info" class="mt-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg hidden">
-            <p class="font-bold">偵錯訊息：</p>
-            <p id="debug-text">初始化中...</p>
-        </div>
-    </main>
 
-    <!-- 提示區 (顯示完整正確句子) -->
-    <div id="hint-area" class="mt-4 p-4 text-sm text-gray-600 bg-gray-100 rounded-lg hidden">
-        <p id="full-sentence-display" class="font-medium"></p>
-    </div>
+        <!-- 提示區 (顯示完整正確句子) -->
+        <div id="grammar-hint-area" class="mt-4 p-4 text-sm text-gray-600 bg-gray-100 rounded-lg hidden">
+            <p id="full-sentence-display" class="font-medium"></p>
+        </div>
+    </section>
 
 </div>
 
 <script>
-    // --- 1. 結構化資料 (從 PDF 內容轉換) ---
-    const lessonData = [
+    // =================================================================
+    // 1. 數據定義 (Data Definitions)
+    // =================================================================
+
+    // A. 單字測驗資料 (Vocabulary Data) - 來自 PDF Unit 5
+    const vocabulary = [
+        { word: "metro", meaning: "捷運;地鐵", hint: "交通工具：通常在城市地下運行 (Unit 5, No. 1)" },
+        { word: "lost", meaning: "迷路的", hint: "狀態：找不到方向 (Unit 5, No. 2)" },
+        { word: "map", meaning: "地圖", hint: "物品：幫助你導航的紙本或電子文件 (Unit 5, No. 3)" },
+        { word: "ask", meaning: "請求;詢問", hint: "動作：提出問題或要求 (Unit 5, No. 4)" },
+        { word: "excuse", meaning: "藉口;理由", hint: "名詞：為錯誤辯解的說法 (Unit 5, No. 5)" },
+        { word: "straight", meaning: "直地;直的", hint: "方向：不轉彎的 (Unit 5, No. 6)" },
+        { word: "ship", meaning: "輪船", hint: "交通工具：大型的，在海上航行 (Unit 5, No. 21)" },
+        { word: "taxi", meaning: "計程車", hint: "交通工具：黃色的，需要付費搭乘 (Unit 5, No. 22)" },
+        { word: "scooter", meaning: "機車", hint: "交通工具：兩輪，台灣常見的代步工具 (Unit 5, No. 25)" },
+        { word: "hospital", meaning: "醫院", hint: "地點：生病或受傷時去看醫生的地方 (Unit 5, No. 30)" }
+    ];
+    
+    // B. 文法填空資料 (Grammar Data) - 來自 PDF 交通工具語法
+    const grammarData = [
       {
         "id": 1,
         "question": "他們總是 [__] [__] 去那間博物館。",
@@ -157,8 +264,8 @@
         "fullSentence": "Did you go to Indonesia by ship this morning?"
       }
     ];
-
-    // 其他選項 (干擾項，包含來自 PDF 的其他單字：scooter)
+    
+    // 拖曳選項 (干擾項)
     const extraOptions = [
         { key: "drive", text: "Drive (開車)", icon: "🚗", type: 'verb' },
         { key: "with", text: "With (和)", icon: "🤝", type: 'verb' },
@@ -168,68 +275,256 @@
         { key: "scooter", text: "Scooter (機車)", icon: "🛵", type: 'vehicle' }
     ];
 
-    let currentChallengeIndex = 0;
-    let currentChallenge = null;
-    let dragData = {}; 
 
-    const app = document.getElementById('app');
-    const questionEl = document.getElementById('challenge-question');
-    const structureEl = document.getElementById('sentence-structure');
-    const optionsEl = document.getElementById('vehicle-options');
+    // =================================================================
+    // 2. 全域狀態與元素參考 (Global State and Element References)
+    // =================================================================
+
+    // 模式切換狀態
+    let currentMode = 'menu';
+    const modes = ['menu', 'spelling', 'grammar'];
+    
+    // 單字測驗狀態
+    let currentWordIndex = 0;
+    let spellingScore = 0;
+    let currentQuiz = null;
+
+    // 文法填空狀態
+    let currentGrammarIndex = 0;
+    let dragData = {};
+
+    // 元素參考 (Spelling)
+    const cardInner = document.querySelector('#mode-spelling .flashcard-inner');
+    const meaningEl = document.getElementById('chinese-meaning');
+    const hintEl = document.getElementById('hint-text');
+    const inputEl = document.getElementById('spelling-input');
+    const checkBtn = document.getElementById('check-button');
+    const nextBtn = document.getElementById('next-button');
     const messageBox = document.getElementById('message-box');
     const messageText = document.getElementById('message-text');
-    const fullSentenceDisplay = document.getElementById('full-sentence-display');
-    const hintArea = document.getElementById('hint-area');
-    const debugInfo = document.getElementById('debug-info');
-    const debugText = document.getElementById('debug-text');
+    const spellingResultEl = document.getElementById('spelling-result');
+    const progressDisplay = document.getElementById('progress-display');
 
-    // 偵錯訊息輸出函數
-    function logDebug(message, isError = false) {
-        debugText.textContent = message;
-        debugInfo.classList.remove('hidden');
-        if (isError) {
-            console.error("APP ERROR:", message);
-            debugInfo.classList.add('bg-red-200');
-        } else {
-            console.log("APP INFO:", message);
-            debugInfo.classList.remove('bg-red-200');
+    // 元素參考 (Grammar)
+    const grammarQuestionEl = document.getElementById('grammar-question');
+    const structureEl = document.getElementById('sentence-structure');
+    const grammarOptionsEl = document.getElementById('vehicle-options');
+    const grammarMessageBox = document.getElementById('grammar-message-box');
+    const grammarMessageText = document.getElementById('grammar-message-text');
+    const fullSentenceDisplay = document.getElementById('full-sentence-display');
+    const grammarHintArea = document.getElementById('grammar-hint-area');
+    
+    // =================================================================
+    // 3. 模式切換邏輯 (Mode Switching Logic)
+    // =================================================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+        switchMode('menu');
+    });
+
+    function switchMode(mode) {
+        if (!modes.includes(mode)) return;
+
+        currentMode = mode;
+
+        // 隱藏所有內容區塊
+        modes.forEach(m => {
+            const el = document.getElementById(`mode-${m}`);
+            if (el) el.classList.add('hidden');
+            const btn = document.getElementById(`btn-${m}`);
+            if (btn) btn.classList.remove('bg-purple-700', 'bg-indigo-700', 'text-white', 'bg-gray-300', 'text-gray-700');
+        });
+        
+        // 顯示當前區塊並更新按鈕樣式
+        const currentEl = document.getElementById(`mode-${mode}`);
+        if (currentEl) currentEl.classList.remove('hidden');
+
+        const currentBtn = document.getElementById(`btn-${mode}`);
+        if (currentBtn) {
+            if (mode === 'spelling') {
+                currentBtn.classList.add('bg-purple-700', 'text-white');
+            } else if (mode === 'grammar') {
+                currentBtn.classList.add('bg-indigo-700', 'text-white');
+            } else if (mode === 'menu') {
+                 currentBtn.classList.add('bg-gray-300', 'text-gray-700');
+            }
+        }
+        
+        // 模式初始化
+        if (mode === 'spelling') {
+            // 洗牌並開始單字測驗
+            vocabulary.sort(() => 0.5 - Math.random());
+            currentWordIndex = 0;
+            spellingScore = 0;
+            startSpellingQuiz();
+        } else if (mode === 'grammar') {
+            // 隨機排列並開始文法填空
+            grammarData.sort(() => 0.5 - Math.random());
+            currentGrammarIndex = 0;
+            startGrammarChallenge();
         }
     }
 
 
-    // 初始化 App
-    document.addEventListener('DOMContentLoaded', () => {
-        logDebug("INFO: DOM 結構載入完成，準備初始化應用程式...");
-        try {
-            if (lessonData.length === 0) {
-                logDebug("ERROR: 資料集 lessonData 為空。請檢查程式碼中 lessonData 陣列是否有內容。", true);
-                return;
-            }
-            logDebug(`INFO: 成功載入 ${lessonData.length} 個挑戰題目。`);
-            setChallenge(currentChallengeIndex);
-            logDebug("SUCCESS: 應用程式初始化完成，挑戰已顯示。");
-        } catch (error) {
-            logDebug(`FATAL ERROR: 應用程式初始化失敗。錯誤訊息: ${error.message}`, true);
-        }
-    });
+    // =================================================================
+    // 4. 單字測驗邏輯 (Spelling Quiz Logic)
+    // =================================================================
 
-    // --- 2. 設置當前的挑戰題目 ---
-    function setChallenge(index) {
-        if (index >= lessonData.length) {
-            showResult('🎉 恭喜你！你完成了所有的交通語法挑戰！', 'success');
-            logDebug("INFO: 所有挑戰已完成。");
+    function updateProgress() {
+        progressDisplay.textContent = `${currentWordIndex}/${vocabulary.length}`;
+    }
+
+    function startSpellingQuiz() {
+        if (currentWordIndex >= vocabulary.length) {
+            endSpellingGame();
             return;
         }
 
-        currentChallenge = lessonData[index];
-        questionEl.textContent = currentChallenge.question;
-        messageBox.classList.add('hidden');
-        structureEl.innerHTML = '';
-        optionsEl.innerHTML = '';
-        hintArea.classList.add('hidden');
+        currentQuiz = vocabulary[currentWordIndex];
         
-        debugInfo.classList.add('hidden');
+        // 重置狀態
+        cardInner.classList.remove('flipped');
+        inputEl.value = '';
+        inputEl.focus();
+        nextBtn.classList.add('hidden');
+        checkBtn.classList.remove('hidden');
+        messageBox.classList.add('hidden');
+        spellingResultEl.textContent = '';
+        inputEl.classList.remove('border-green-500', 'border-red-500');
+        inputEl.disabled = false;
+        checkBtn.disabled = false;
+        
+        // 設置卡片正面內容
+        meaningEl.textContent = currentQuiz.meaning;
+        hintEl.textContent = `提示: ${currentQuiz.hint.split(":")[1].trim()}`;
+        
+        updateProgress();
+    }
 
+    // 翻轉卡片
+    function flipCard() {
+        if (!checkBtn.classList.contains('hidden')) {
+            cardInner.classList.toggle('flipped');
+        }
+    }
+
+    // 檢查拼字
+    function checkSpelling() {
+        const userInput = inputEl.value.toLowerCase().trim();
+        const correctWord = currentQuiz.word.toLowerCase();
+
+        inputEl.disabled = true;
+        checkBtn.disabled = true;
+
+        if (userInput === correctWord) {
+            handleCorrectSpelling();
+        } else {
+            handleIncorrectSpelling(correctWord);
+        }
+
+        nextBtn.classList.remove('hidden');
+    }
+
+    function handleCorrectSpelling() {
+        spellingScore++;
+        messageBox.className = 'mt-6 p-4 text-center rounded-xl transition duration-500 bg-green-100 text-green-700 shadow-md';
+        messageText.textContent = `✅ 拼字完全正確！太棒了！ (Score: ${spellingScore})`;
+        inputEl.classList.add('border-green-500');
+        
+        spellingResultEl.textContent = currentQuiz.word;
+        cardInner.classList.add('flipped');
+    }
+
+    function handleIncorrectSpelling(correctWord) {
+        messageBox.className = 'mt-6 p-4 text-center rounded-xl transition duration-500 bg-red-100 text-red-700 shadow-md';
+        messageText.textContent = `❌ 拼字錯誤！正確答案是...`;
+        inputEl.classList.add('border-red-500');
+
+        spellingResultEl.textContent = '';
+        cardInner.classList.add('flipped');
+
+        typeWriterEffect(correctWord, spellingResultEl);
+    }
+
+    function typeWriterEffect(text, element) {
+        let i = 0;
+        element.classList.add('typewriter-text');
+        
+        const typingInterval = setInterval(() => {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+            } else {
+                clearInterval(typingInterval);
+                element.classList.remove('typewriter-text');
+            }
+        }, 100); 
+    }
+
+    function nextWord() {
+        currentWordIndex++;
+        setTimeout(() => {
+            startSpellingQuiz();
+        }, 500); 
+    }
+
+    function endSpellingGame() {
+        inputEl.disabled = true;
+        checkBtn.classList.add('hidden');
+        nextBtn.classList.add('hidden');
+
+        let finalMessage;
+        if (spellingScore === vocabulary.length) {
+            finalMessage = `🎉 恭喜！你以滿分 ${spellingScore}/${vocabulary.length} 完成所有單字拼寫！太厲害了！`;
+        } else if (spellingScore >= vocabulary.length / 2) {
+            finalMessage = `👍 挑戰完成！你的分數是 ${spellingScore}/${vocabulary.length}。表現不錯，再接再厲！`;
+        } else {
+            finalMessage = `💪 挑戰完成！你的分數是 ${spellingScore}/${vocabulary.length}。沒關係，多加練習就能掌握！`;
+        }
+
+        messageBox.className = 'mt-6 p-4 text-center rounded-xl transition duration-500 bg-blue-100 text-blue-700 shadow-xl';
+        messageText.textContent = finalMessage;
+    }
+
+
+    // =================================================================
+    // 5. 文法填空邏輯 (Grammar Fill-in Logic)
+    // =================================================================
+
+    function getVerbText(key) {
+        switch (key) {
+            case 'take': return 'Take (搭乘)'; case 'ride': return 'Ride (騎乘)'; case 'by': return 'By (藉由)';
+            case 'on': return 'On (在...上)'; case 'get': return 'Get (得到)'; case 'off': return 'Off (離開)';
+            case 'foot': return 'Foot (腳)'; default: return key.toUpperCase();
+        }
+    }
+    function getVerbIcon(key) {
+        switch (key) {
+            case 'take': return '🖐️'; case 'ride': return '🚴'; case 'by': return '⏩';
+            case 'on': return '⬆️'; case 'get': return '➡️'; case 'off': return '⬇️';
+            case 'foot': return '🦶'; default: return '❓';
+        }
+    }
+    function getVerbType(key) {
+        if (['take', 'ride', 'get'].includes(key)) return '動詞';
+        if (['by', 'on', 'off'].includes(key)) return '介系詞';
+        if (['foot', 'metro', 'taxi', 'bike', 'ship', 'scooter'].includes(key)) return '載具';
+        return '其他';
+    }
+
+
+    function startGrammarChallenge() {
+        if (currentGrammarIndex >= grammarData.length) {
+            showGrammarResult('🎉 恭喜你！你完成了所有的文法挑戰！', 'success');
+            return;
+        }
+
+        const currentChallenge = grammarData[currentGrammarIndex];
+        grammarQuestionEl.textContent = currentChallenge.question;
+        grammarMessageBox.classList.add('hidden');
+        structureEl.innerHTML = '';
+        grammarOptionsEl.innerHTML = '';
+        grammarHintArea.classList.add('hidden');
 
         // 隨機組合選項
         const requiredOptions = [
@@ -237,11 +532,8 @@
             { key: currentChallenge.targetVerb, text: getVerbText(currentChallenge.targetVerb), icon: getVerbIcon(currentChallenge.targetVerb), type: getVerbType(currentChallenge.targetVerb) }
         ];
 
-        // 將所有選項混合並隨機排列
         const allOptions = [...requiredOptions, ...extraOptions]
-            .filter((opt, i, self) =>
-                i === self.findIndex((t) => t.key === opt.key) // 去重
-            )
+            .filter((opt, i, self) => i === self.findIndex((t) => t.key === opt.key))
             .sort(() => 0.5 - Math.random());
 
         // 渲染語法結構
@@ -249,15 +541,13 @@
             const span = document.createElement('span');
             span.className = 'py-2';
             if (part.includes('【')) {
-                // 這是拖曳目標區
-                span.className = 'drop-zone bg-white rounded-xl shadow-inner flex items-center justify-center p-2 min-w-[6rem] min-h-[3.5rem] border-2 border-dashed border-purple-400 hover:border-purple-600 transition-all text-xl md:text-2xl';
-                span.dataset.targetType = part.replace(/[【】]/g, ''); // 例如：'動詞' 或 '載具'
+                span.className = 'drop-zone bg-white rounded-xl shadow-inner flex items-center justify-center p-2 min-w-[6rem] min-h-[3.5rem] border-2 border-dashed border-indigo-400 hover:border-indigo-600 transition-all text-xl md:text-2xl';
+                span.dataset.targetType = part.replace(/[【】]/g, ''); 
                 span.addEventListener('dragover', allowDrop);
                 span.addEventListener('dragleave', handleDragLeave);
                 span.addEventListener('drop', handleDrop);
                 span.textContent = part;
             } else {
-                // 這是固定文字
                 span.className = 'text-2xl md:text-3xl font-bold text-indigo-700 py-2';
                 span.textContent = part;
             }
@@ -267,65 +557,22 @@
         // 渲染拖曳選項
         allOptions.forEach(option => {
             const item = createDragItem(option);
-            optionsEl.appendChild(item);
+            grammarOptionsEl.appendChild(item);
         });
     }
 
-    // 獲取動詞的顯示文字 (略，與原版相同)
-    function getVerbText(key) {
-        switch (key) {
-            case 'take': return 'Take (搭乘)';
-            case 'ride': return 'Ride (騎乘)';
-            case 'by': return 'By (藉由)';
-            case 'on': return 'On (在...上)';
-            case 'get': return 'Get (得到)';
-            case 'off': return 'Off (離開)';
-            case 'foot': return 'Foot (腳)';
-            default: return key.toUpperCase();
-        }
-    }
-    
-    // 獲取動詞的圖示 (略，與原版相同)
-    function getVerbIcon(key) {
-        switch (key) {
-            case 'take': return '🖐️';
-            case 'ride': return '🚴';
-            case 'by': return '⏩';
-            case 'on': return '⬆️';
-            case 'get': return '➡️';
-            case 'off': return '⬇️';
-            case 'foot': return '🦶';
-            default: return '❓';
-        }
-    }
-
-    // 獲取選項的類型 (略，與原版相同)
-    function getVerbType(key) {
-        if (['take', 'ride', 'get'].includes(key)) return '動詞';
-        if (['by', 'on', 'off'].includes(key)) return '介系詞';
-        if (['foot', 'metro', 'taxi', 'bike', 'ship', 'scooter'].includes(key)) return '載具';
-        return '其他';
-    }
-
-
-    // --- 3. 創建可拖曳的單字卡片 (略，與原版相同) ---
     function createDragItem(option) {
         const item = document.createElement('div');
-        item.className = `drag-item card bg-purple-200 text-purple-800 p-3 rounded-lg text-center shadow-md text-sm md:text-base font-semibold`;
+        item.className = `drag-item card bg-indigo-200 text-indigo-800 p-3 rounded-lg text-center shadow-md text-sm md:text-base font-semibold`;
         item.draggable = true;
         item.textContent = `${option.icon} ${option.text}`;
         item.dataset.key = option.key;
         item.dataset.type = option.type;
-
         item.addEventListener('dragstart', handleDragStart);
         return item;
     }
 
-    // --- 4. 拖曳事件處理 (Drag and Drop Logic) ---
     function handleDragStart(e) {
-        // 偵測拖曳開始
-        logDebug(`DRAG START: 項目 ${e.target.dataset.key} 開始拖曳。`);
-        // 這裡我們不使用 dataTransfer.setData('text/plain') 來傳遞資料，而是直接使用 dragData 物件來傳遞元素引用，以避免跨瀏覽器問題。
         dragData = {
             key: e.target.dataset.key,
             type: e.target.dataset.type,
@@ -336,60 +583,46 @@
 
     function allowDrop(e) {
         e.preventDefault();
-        e.target.classList.add('bg-purple-100'); 
+        e.target.classList.add('bg-indigo-100'); 
     }
 
     function handleDragLeave(e) {
-        e.target.classList.remove('bg-purple-100');
+        e.target.classList.remove('bg-indigo-100');
     }
 
     function handleDrop(e) {
         e.preventDefault();
         const dropZone = e.currentTarget;
-        dropZone.classList.remove('bg-purple-100');
-
-        const droppedKey = dragData.key;
-        logDebug(`DROP: 項目 ${droppedKey} 放置在 ${dropZone.dataset.targetType} 區域。`);
+        dropZone.classList.remove('bg-indigo-100');
 
         const existingItem = dropZone.querySelector('.drag-item');
         if (existingItem) {
             existingItem.classList.remove('opacity-50', 'correct-animation', 'incorrect-animation');
-            optionsEl.appendChild(existingItem);
-            logDebug(`INFO: 區域原有項目 ${existingItem.dataset.key} 已移回選項區。`);
+            grammarOptionsEl.appendChild(existingItem);
         }
 
         dragData.element.classList.remove('opacity-50');
-
         dropZone.innerHTML = '';
-        
-        // 嘗試將元素新增到 DOM 樹
         dropZone.appendChild(dragData.element); 
         
-        // ** CRITICAL FIX/DEBUG CHECK ADDED HERE **
-        // 這是關鍵檢查點，確認元素是否真的被正確識別為 dropZone 的子元素
+        // ** 關鍵修復：確保 DOM 元素正確識別 **
         if (!dropZone.querySelector('.drag-item')) {
-             logDebug("FATAL D&D ERROR: 元素被新增到 dropZone，但 querySelector 找不到它。DOM 狀態可能無效。", true);
-             // 恢復原來的文字提示
              dropZone.textContent = `【${dropZone.dataset.targetType}】`;
-             return; // 如果 DOM 失敗，則停止執行
+             return; 
         }
-        // ** END CRITICAL FIX/DEBUG CHECK **
-
 
         dropZone.classList.remove('border-dashed');
-        dropZone.classList.add('border-solid', 'border-purple-600', 'shadow-lg');
+        dropZone.classList.add('border-solid', 'border-indigo-600', 'shadow-lg');
 
-        checkCompletion();
+        checkGrammarCompletion();
     }
 
-    // 檢查完成度和正確性 (核心修正部分)
-    function checkCompletion() {
+    function checkGrammarCompletion() {
         const dropZones = structureEl.querySelectorAll('.drop-zone');
         let filledCount = 0;
         let isCorrect = true;
         let droppedKeys = {}; 
 
-        // 修正：直接檢查每個 dropZone 裡是否有 drag-item 元素
         dropZones.forEach(zone => {
             const item = zone.querySelector('.drag-item');
             if (item) {
@@ -398,34 +631,22 @@
                 droppedKeys[expectedType] = item.dataset.key;
             }
         });
-        
-        logDebug(`CHECK: 正在檢查答案... 已填入 ${filledCount} 個區域，總共 ${dropZones.length} 個區域。`);
 
-        // 只有當所有可拖曳區都填滿時才進行檢查
         if (filledCount === dropZones.length) {
+            const currentChallenge = grammarData[currentGrammarIndex];
             
-            logDebug(`ANSWER CHECK: 期待動詞/介詞: ${currentChallenge.targetVerb}, 期待載具/方式: ${currentChallenge.targetVehicle}`);
-
-            // 檢查 targetVerb (動詞/介系詞) 正確性
             const verbKey = droppedKeys['動詞'] || droppedKeys['介系詞'];
-            if (verbKey !== currentChallenge.targetVerb) {
-                isCorrect = false;
-                logDebug(`ERROR: 動詞/介詞錯誤。放入: ${verbKey}, 應為: ${currentChallenge.targetVerb}`, true);
-            }
-
-            // 檢查 targetVehicle/方式 (載具/方式/介系詞片語) 正確性
             const vehicleKey = droppedKeys['載具'] || droppedKeys['方式'];
-            if (vehicleKey !== currentChallenge.targetVehicle) {
-                 isCorrect = false;
-                 logDebug(`ERROR: 載具/方式錯誤。放入: ${vehicleKey}, 應為: ${currentChallenge.targetVehicle}`, true);
-            }
+            
+            // 檢查 targetVerb (動詞/介系詞) 正確性
+            if (verbKey !== currentChallenge.targetVerb) { isCorrect = false; }
+            // 檢查 targetVehicle/方式 (載具/方式/介系詞片語) 正確性
+            if (vehicleKey !== currentChallenge.targetVehicle) { isCorrect = false; }
             
             // 處理 get off 這種雙欄位動詞片語
             if (currentChallenge.targetVerb === 'get' && currentChallenge.targetVehicle === 'off') {
-                // 這裡需要確保動詞區是 get，介系詞區是 off
                 if (droppedKeys['動詞'] !== 'get' || droppedKeys['介系詞'] !== 'off') {
                     isCorrect = false;
-                    logDebug("ERROR: Get Off 片語不正確", true);
                 }
             }
 
@@ -433,7 +654,7 @@
             // 顯示結果
             const resultType = isCorrect ? 'success' : 'error';
             const resultText = isCorrect ? `✅ 太棒了！正確答案是：${currentChallenge.fullSentence}` : `❌ 答錯了，請再想想！提示：${currentChallenge.rule}`;
-            showResult(resultText, resultType);
+            showGrammarResult(resultText, resultType);
             
             const items = structureEl.querySelectorAll('.drag-item');
             if (isCorrect) {
@@ -442,29 +663,26 @@
                 items.forEach(item => item.classList.add('incorrect-animation'));
                 setTimeout(() => {
                     fullSentenceDisplay.textContent = `完整正確句子：${currentChallenge.fullSentence}`;
-                    hintArea.classList.remove('hidden');
+                    grammarHintArea.classList.remove('hidden');
                 }, 1000);
             }
         }
     }
 
-    // 顯示結果訊息 (略，與原版相同)
-    function showResult(text, type) {
-        messageText.textContent = text;
-        messageBox.classList.remove('hidden');
+    function showGrammarResult(text, type) {
+        grammarMessageText.textContent = text;
+        grammarMessageBox.classList.remove('hidden');
         if (type === 'success') {
-            messageBox.className = 'mt-8 p-4 text-center rounded-xl transition duration-500 bg-green-100 text-green-700 shadow-xl';
+            grammarMessageBox.className = 'mt-8 p-4 text-center rounded-xl transition duration-500 bg-green-100 text-green-700 shadow-xl';
         } else {
-            messageBox.className = 'mt-8 p-4 text-center rounded-xl transition duration-500 bg-red-100 text-red-700 shadow-xl';
+            grammarMessageBox.className = 'mt-8 p-4 text-center rounded-xl transition duration-500 bg-red-100 text-red-700 shadow-xl';
         }
     }
-
-    // 進入下一題 (略，與原版相同)
-    function nextChallenge() {
-        currentChallengeIndex++;
-        setChallenge(currentChallengeIndex);
+    
+    function nextGrammarChallenge() {
+        currentGrammarIndex++;
+        startGrammarChallenge();
     }
-
 </script>
 </body>
 </html>
