@@ -11,28 +11,18 @@
         body { font-family: 'Inter', sans-serif; background-color: #f7ffee; }
         .app-container { min-height: 80vh; }
 
-        /* 卡片翻轉動畫 - 單字測驗 */
-        .flashcard { perspective: 1000px; cursor: pointer; }
-        .flashcard-inner {
-            transition: transform 0.8s;
-            transform-style: preserve-3d;
-            height: 100%;
-        }
-        .flashcard-front, .flashcard-back {
-            backface-visibility: hidden;
-            position: absolute;
-            width: 100%;
-            height: 100%;
+        /* 單字卡片樣式 (簡化為靜態顯示) */
+        .flashcard-static {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            height: 10rem;
+            background-color: #8b5cf6; /* 紫色 */
+            color: white;
             border-radius: 1.5rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
         }
-        .flashcard-front { background-color: #8b5cf6; color: white; z-index: 2; }
-        .flashcard-back { background-color: #ffffff; color: #1f2937; transform: rotateY(180deg); }
-        .flipped .flashcard-inner { transform: rotateY(180deg); }
 
         /* 打字機效果 - 單字測驗 */
         .typewriter-text {
@@ -105,25 +95,19 @@
             目前進度: <span id="progress-display">0/10</span>
         </p>
         
-        <!-- 閃卡顯示區 -->
-        <div id="flashcard" class="flashcard w-full h-48 mb-8" onclick="flipCard()">
-            <div class="flashcard-inner relative">
-                <!-- 正面：顯示中文意思 (題目) -->
-                <div class="flashcard-front">
-                    <div class="text-center">
-                        <p class="text-xl mb-2 font-light text-gray-200">請拼出此單字 (點擊卡片查看提示)</p>
-                        <h2 class="text-5xl font-black mb-4" id="chinese-meaning"></h2> 
-                    </div>
-                </div>
-                <!-- 背面：顯示提示/結果 -->
-                <div class="flashcard-back">
-                    <div class="text-center">
-                        <p class="text-lg font-bold mb-2 text-gray-500" id="back-title">單字提示：</p>
-                        <p class="text-xl italic text-gray-700" id="hint-text"></p>
-                        <p class="text-3xl font-bold mt-4 text-purple-600 hidden" id="spelling-result"></p>
-                    </div>
-                </div>
+        <!-- 閃卡顯示區 (簡化為靜態卡片) -->
+        <div id="flashcard-static" class="flashcard-static w-full mb-4">
+            <div class="text-center">
+                <p class="text-xl mb-2 font-light text-gray-200">請拼出此單字</p>
+                <h2 class="text-5xl font-black mb-4" id="chinese-meaning"></h2> 
             </div>
+        </div>
+
+        <!-- 修正: 提示解釋區 (取代反轉卡片) -->
+        <div id="spelling-hint-area" class="w-full p-4 bg-gray-100 rounded-xl mb-8 text-center border-2 border-gray-300 shadow-inner">
+            <p class="text-lg font-bold mb-1 text-gray-700">點擊卡片顯示解釋與提示</p>
+            <p class="text-xl italic text-gray-500 hidden" id="hint-text"></p>
+            <p class="text-3xl font-bold mt-2 text-purple-600 hidden" id="spelling-result"></p>
         </div>
         
         <!-- 輸入區 -->
@@ -297,8 +281,10 @@
     let dragData = {};
 
     // 元素參考 (Spelling)
-    const flashcardEl = document.getElementById('flashcard'); // 獲取最外層元素
-    const cardInner = document.querySelector('#mode-spelling .flashcard-inner');
+    const flashcardStaticEl = document.getElementById('flashcard-static'); // 新增的靜態卡片元素
+    const spellingHintAreaEl = document.getElementById('spelling-hint-area'); // 新增的提示區
+    const hintTitleEl = spellingHintAreaEl ? spellingHintAreaEl.querySelector('p:first-child') : null; // 提示區標題
+
     const meaningEl = document.getElementById('chinese-meaning');
     const hintEl = document.getElementById('hint-text');
     const inputEl = document.getElementById('spelling-input');
@@ -308,7 +294,7 @@
     const messageText = document.getElementById('message-text');
     const spellingResultEl = document.getElementById('spelling-result');
     const progressDisplay = document.getElementById('progress-display');
-    const backTitleEl = document.getElementById('back-title'); // 新增的背面標題元素
+
 
     // 元素參考 (Grammar)
     const grammarQuestionEl = document.getElementById('grammar-question');
@@ -325,9 +311,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         switchMode('menu');
-        // *** 修正: 在初始化時就綁定卡片點擊事件 ***
-        if (flashcardEl) {
-            flashcardEl.addEventListener('click', flipCard);
+        
+        // *** 修正: 綁定靜態卡片的點擊事件 (用於顯示提示) ***
+        if (flashcardStaticEl) {
+            flashcardStaticEl.addEventListener('click', toggleSpellingHint);
         }
     });
 
@@ -392,7 +379,6 @@
         currentQuiz = vocabulary[currentWordIndex];
         
         // 重置狀態
-        cardInner.classList.remove('flipped');
         inputEl.value = '';
         inputEl.focus();
         nextBtn.classList.add('hidden');
@@ -402,25 +388,30 @@
         inputEl.disabled = false;
         checkBtn.disabled = false;
         
-        // *** 修正: 設置卡片正面內容 (中文意思) ***
+        // 設置卡片正面內容 (中文意思)
         meaningEl.textContent = currentQuiz.meaning;
         
-        // 設置卡片背面內容 (提示)
-        backTitleEl.textContent = "單字提示：";
-        hintEl.textContent = currentQuiz.hint.split(":")[1].trim();
+        // *** 修正: 重置提示區 ***
+        hintTitleEl.textContent = "點擊卡片顯示解釋與提示"; // 提示區標題
+        hintEl.classList.add('hidden'); // 隱藏提示內容
         spellingResultEl.classList.add('hidden'); // 隱藏結果
-        hintEl.classList.remove('hidden'); // 顯示提示
-        
-        updateProgress();
     }
-
-    // 翻轉卡片
-    function flipCard() {
-        // 只有在還沒檢查答案時才能點擊翻轉查看提示
-        if (!checkBtn.classList.contains('hidden')) {
-            cardInner.classList.toggle('flipped');
+    
+    // *** 新增: 點擊卡片顯示提示邏輯 (取代反轉) ***
+    function toggleSpellingHint() {
+        if (checkBtn.classList.contains('hidden')) return; // 答題後鎖定
+        
+        // 如果提示內容是隱藏的，就顯示它
+        if (hintEl.classList.contains('hidden')) {
+             hintTitleEl.textContent = "單字提示：";
+             hintEl.classList.remove('hidden');
+        } else {
+             // 否則，隱藏它
+             hintTitleEl.textContent = "點擊卡片顯示解釋與提示";
+             hintEl.classList.add('hidden');
         }
     }
+
 
     // 檢查拼字
     function checkSpelling() {
@@ -446,12 +437,10 @@
         inputEl.classList.add('border-green-500');
         
         // 修正: 顯示正確答案
-        backTitleEl.textContent = "✅ 正確拼法：";
+        hintTitleEl.textContent = "✅ 正確拼法：";
         hintEl.classList.add('hidden'); // 隱藏提示
         spellingResultEl.classList.remove('hidden'); // 顯示結果
         spellingResultEl.textContent = currentQuiz.word;
-
-        cardInner.classList.add('flipped');
     }
 
     function handleIncorrectSpelling(correctWord) {
@@ -460,13 +449,11 @@
         inputEl.classList.add('border-red-500');
 
         // 修正: 顯示打字機答案
-        backTitleEl.textContent = "❌ 正確拼法：";
+        hintTitleEl.textContent = "❌ 正確拼法：";
         hintEl.classList.add('hidden'); // 隱藏提示
         spellingResultEl.classList.remove('hidden'); // 顯示結果
 
         spellingResultEl.textContent = '';
-        cardInner.classList.add('flipped');
-
         typeWriterEffect(correctWord, spellingResultEl);
     }
 
