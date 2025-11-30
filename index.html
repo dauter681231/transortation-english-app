@@ -82,8 +82,8 @@
                 </button>
                 <button onclick="switchMode('grammar')" class="p-6 bg-indigo-100 text-indigo-800 rounded-xl shadow-lg hover:shadow-xl transition transform hover:scale-105">
                     <span class="text-4xl">🚌</span>
-                    <p class="text-2xl font-bold mt-2">交通文法填空</p>
-                    <p class="text-sm mt-1">應用訓練：學習 by/take/ride/on foot 語法</p>
+                    <p class="text-2xl font-bold mt-2">文法片語填空</p>
+                    <p class="text-sm mt-1">應用訓練：包含交通、導航、動作片語</p>
                 </button>
             </div>
         </div>
@@ -130,7 +130,7 @@
 
     <!-- 3. 文法填空模式 (Grammar Fill-in) -->
     <section id="mode-grammar" class="mode-view hidden p-4">
-        <h2 class="text-3xl font-bold text-indigo-600 mb-6 text-center">📝 交通文法填空</h2>
+        <h2 class="text-3xl font-bold text-indigo-600 mb-6 text-center">📝 文法片語填空</h2>
 
         <div id="grammar-challenge" class="bg-indigo-50 p-6 rounded-2xl mb-8 border-l-4 border-indigo-400">
             <p class="text-xl font-semibold text-gray-700 mb-4" id="grammar-question">載入中...</p>
@@ -169,22 +169,63 @@
     // 1. 數據定義 (Data Definitions)
     // =================================================================
 
-    // A. 單字測驗資料 (Vocabulary Data) - 來自 PDF Unit 5
+    // A. 單字測驗資料 (Vocabulary Data) - 升級為歸納式解釋
     const vocabulary = [
-        { word: "metro", meaning: "捷運;地鐵", hint: "交通工具：通常在城市地下運行 (Unit 5, No. 1)" },
-        { word: "lost", meaning: "迷路的", hint: "狀態：找不到方向 (Unit 5, No. 2)" },
-        { word: "map", meaning: "地圖", hint: "物品：幫助你導航的紙本或電子文件 (Unit 5, No. 3)" },
-        { word: "ask", meaning: "請求;詢問", hint: "動作：提出問題或要求 (Unit 5, No. 4)" },
-        { word: "excuse", meaning: "藉口;理由", hint: "名詞：為錯誤辯解的說法 (Unit 5, No. 5)" },
-        { word: "straight", meaning: "直地;直的", hint: "方向：不轉彎的 (Unit 5, No. 6)" },
-        { word: "ship", meaning: "輪船", hint: "交通工具：大型的，在海上航行 (Unit 5, No. 21)" },
-        { word: "taxi", meaning: "計程車", hint: "交通工具：黃色的，需要付費搭乘 (Unit 5, No. 22)" },
-        { word: "scooter", meaning: "機車", hint: "交通工具：兩輪，台灣常見的代步工具 (Unit 5, No. 25)" },
-        { word: "hospital", meaning: "醫院", hint: "地點：生病或受傷時去看醫生的地方 (Unit 5, No. 30)" }
+        { 
+            word: "metro", 
+            meaning: "捷運;地鐵", 
+            hint: "名詞 (n.)。\n用法：指城市地鐵或捷運系統。\n例句：You can go there by bus or metro. (Unit 5, No. 1)" 
+        },
+        { 
+            word: "lost", 
+            meaning: "迷路的;走失的", 
+            hint: "形容詞 (adj.)。\n多義：也表『不知所措的;迷惘的』。\n用法：常用於 get lost (迷路)。(Unit 5, No. 2)" 
+        },
+        { 
+            word: "map", 
+            meaning: "地圖", 
+            hint: "名詞 (n.)。\n用法：問路或導航時使用。\n例句：We need a map now. (Unit 5, No. 3)" 
+        },
+        { 
+            word: "ask", 
+            meaning: "請求;詢問", 
+            hint: "動詞 (v.)。\n用法：\n① ask + 人 + for + 物 (要求某物)\n② ask + 人 + to V (要求某人做...)\n(Unit 5, No. 4)" 
+        },
+        { 
+            word: "excuse", 
+            meaning: "藉口;理由 (n.) / 原諒 (v.)", 
+            hint: "多義：名詞表『藉口』，動詞表『原諒』。\n片語：make excuses (找藉口)。(Unit 5, No. 5)" 
+        },
+        { 
+            word: "straight", 
+            meaning: "直地 (adv.) / 直的 (adj.)", 
+            hint: "詞性：可作副詞或形容詞。\n用法：go straight (直走)。(Unit 5, No. 6)" 
+        },
+        { 
+            word: "ship", 
+            meaning: "輪船 (n.) / 運送 (v.)", 
+            hint: "多義：名詞表『大船』，動詞表『運輸』。\n例句：They took a ship to the USA. (Unit 5, No. 21)" 
+        },
+        { 
+            word: "taxi", 
+            meaning: "計程車", 
+            hint: "名詞 (n.)。\n用法：可搭配 take a taxi 或 by taxi。\n補充：taxi driver (計程車司機)。(Unit 5, No. 22)" 
+        },
+        { 
+            word: "scooter", 
+            meaning: "機車;滑板車", 
+            hint: "名詞 (n.)。\n差異：與 motorcycle 的主要差異在於是否有腳踏板。(Unit 5, No. 25)" 
+        },
+        { 
+            word: "hospital", 
+            meaning: "醫院", 
+            hint: "名詞 (n.)。\n用法：在醫院工作 (work at a hospital)；住院 (be in the hospital)。(Unit 5, No. 30)" 
+        }
     ];
     
-    // B. 文法填空資料 (Grammar Data) - 來自 PDF 交通工具語法
+    // B. 文法填空資料 (Grammar Data) - 擴充片語和文法點
     const grammarData = [
+      // 交通工具基礎用法
       {
         "id": 1,
         "question": "他們總是 [__] [__] 去那間博物館。",
@@ -193,7 +234,7 @@
         "targetVehicle": "metro",
         "vehicleText": "Metro (捷運)",
         "icon": "🚇",
-        "rule": "介系詞用法：使用 'by' 時，後面直接接交通工具，中間不加冠詞 a/the。",
+        "rule": "交通語法：搭乘方式用 'by' 時，後面直接接交通工具，不加冠詞 a/the。",
         "fullSentence": "They always go to the museum by metro."
       },
       {
@@ -204,7 +245,7 @@
         "targetVehicle": "taxi",
         "vehicleText": "Taxi (計程車)",
         "icon": "🚕",
-        "rule": "動詞用法：使用 'take' 或 'catch' 時，後面需要加上冠詞 a/the 再接交通工具。",
+        "rule": "交通語法：使用動詞 'take' 時，後面需要加上冠詞 a/the 再接交通工具。",
         "fullSentence": "Can we take a taxi home here?"
       },
       {
@@ -215,41 +256,65 @@
         "targetVehicle": "bike",
         "vehicleText": "Bike (單車)",
         "icon": "🚲",
-        "rule": "動詞用法：騎乘兩輪或有座位的交通工具時，常使用 'ride'。",
+        "rule": "交通語法：騎乘兩輪或有座位的交通工具時，常使用 'ride'。",
         "fullSentence": "My friend likes to ride his bike along the bank."
       },
+      // 上下車片語
       {
         "id": 4,
-        "question": "花店很近，我們 [__] [__] 去吧！",
-        "structure": ["The shop is close. Let's go there", "【介系詞】", "【方式】", "."],
-        "targetVerb": "on",
-        "targetVehicle": "foot",
-        "vehicleText": "Foot (走路)",
-        "icon": "🚶",
-        "rule": "特殊用法：走路（步行）是一個固定片語，必須使用 'on foot'。",
-        "fullSentence": "The shop is close. Let's go there on foot."
-      },
-      {
-        "id": 5,
         "question": "我們需要在圖書館 [__] [__] 這輛公車。",
         "structure": ["We need to", "【動詞】", "【介系詞】", "the bus at the library."],
         "targetVerb": "get",
         "targetVehicle": "off",
         "vehicleText": "Off (下車)",
         "icon": "⬇️",
-        "rule": "動詞片語：'Get off' 用於下大型交通工具 (公車、火車、捷運)。",
+        "rule": "片語用法：'Get off' 用於下大型交通工具 (公車、火車、捷運)。",
         "fullSentence": "We need to get off the bus at the library."
+      },
+      // 導航片語
+      {
+        "id": 5,
+        "question": "請在醫院右轉，然後 [__] [__] 直走。",
+        "structure": ["Please turn right at the hospital and keep", "【動詞】", "【方向】", "."],
+        "targetVerb": "going",
+        "targetVehicle": "straight",
+        "vehicleText": "Straight (直地)",
+        "icon": "⬆️",
+        "rule": "片語用法：'keep going straight' 意為保持直走。",
+        "fullSentence": "Please turn right at the hospital and keep going straight."
       },
       {
         "id": 6,
-        "question": "你今天早上是 [__] [__] 船去印尼的嗎？",
-        "structure": ["Did you go to Indonesia", "【介系詞】", "【載具】", "this morning?"],
-        "targetVerb": "by",
-        "targetVehicle": "ship",
-        "vehicleText": "Ship (輪船)",
-        "icon": "🚢",
-        "rule": "介系詞用法：詢問交通方式時，常使用 'by' + 交通工具。",
-        "fullSentence": "Did you go to Indonesia by ship this morning?"
+        "question": "電影院在市場的 [__] [__]。",
+        "structure": ["The theater is", "【介系詞片語】", "【地點】", "the market."],
+        "targetVerb": "across",
+        "targetVehicle": "from",
+        "vehicleText": "From (對面)",
+        "icon": "↔️",
+        "rule": "介系詞片語：'across from' 意為在...的對面。",
+        "fullSentence": "The theater is across from the market."
+      },
+      {
+        "id": 7,
+        "question": "你應該 [__] [__] 你的朋友來幫你。",
+        "structure": ["You should", "【動詞】", "【片語】", "your friends to help you."],
+        "targetVerb": "ask",
+        "targetVehicle": "to",
+        "vehicleText": "To (要求)",
+        "icon": "👉",
+        "rule": "動詞用法：'ask + 人 + to V' 意為要求某人做某事。",
+        "fullSentence": "You should ask your friends to help you."
+      },
+      {
+        "id": 8,
+        "question": "艾咪 [__] [__] 店員要了一杯水。",
+        "structure": ["Amy", "【動詞】", "【片語】", "the clerk for a glass of water."],
+        "targetVerb": "asked",
+        "targetVehicle": "for",
+        "vehicleText": "For (要求)",
+        "icon": "🎁",
+        "rule": "動詞用法：'ask + 人 + for + 物' 意為向某人要求某物。",
+        "fullSentence": "Amy asked the clerk for a glass of water."
       }
     ];
     
@@ -260,7 +325,10 @@
         { key: "a", text: "A (一個)", icon: "1️⃣", type: 'article' },
         { key: "on", text: "On (在上)", icon: "👆", type: 'verb' }, 
         { key: "go", text: "Go (去)", icon: "🏃", type: 'verb' },
-        { key: "scooter", text: "Scooter (機車)", icon: "🛵", type: 'vehicle' }
+        { key: "scooter", text: "Scooter (機車)", icon: "🛵", type: 'vehicle' },
+        { key: "train", text: "Train (火車)", icon: "🚆", type: 'vehicle' },
+        { key: "past", text: "Past (經過)", icon: "➡️", type: 'preposition' },
+        { key: "walk", text: "Walk (走路)", icon: "🚶", type: 'verb' }
     ];
 
 
@@ -392,22 +460,12 @@
         // 設置卡片正面內容 (中文意思)
         meaningEl.textContent = currentQuiz.meaning;
         
-        // 修正: 重置提示區
+        // 重置提示區
         hintTitleEl.textContent = "點擊卡片顯示解釋與提示"; // 提示區標題
         
-        // *** 關鍵修復：確保 hint 不為 undefined ***
-        try {
-            const hintParts = currentQuiz.hint.split(':');
-            if (hintParts.length > 1) {
-                hintEl.textContent = hintParts.slice(1).join(':').trim();
-            } else {
-                hintEl.textContent = currentQuiz.hint; 
-            }
-        } catch (e) {
-            hintEl.textContent = "無法載入提示";
-            console.error("Hint parsing error:", e);
-        }
-
+        // 設置提示內容，並用換行符號取代 '\n'
+        hintEl.innerHTML = currentQuiz.hint.replace(/\n/g, '<br>');
+        
         hintEl.classList.add('hidden'); // 隱藏提示內容
         spellingResultEl.classList.add('hidden'); // 隱藏結果
         
@@ -423,7 +481,7 @@
         
         // 如果提示內容是隱藏的，就顯示它
         if (hintEl.classList.contains('hidden')) {
-             hintTitleEl.textContent = "單字提示：";
+             hintTitleEl.textContent = "單字歸納與提示：";
              hintEl.classList.remove('hidden');
         } else {
              // 否則，隱藏它
@@ -528,19 +586,26 @@
         switch (key) {
             case 'take': return 'Take (搭乘)'; case 'ride': return 'Ride (騎乘)'; case 'by': return 'By (藉由)';
             case 'on': return 'On (在...上)'; case 'get': return 'Get (得到)'; case 'off': return 'Off (離開)';
-            case 'foot': return 'Foot (腳)'; default: return key.toUpperCase();
+            case 'foot': return 'Foot (腳)'; case 'going': return 'Going (正在走)'; case 'straight': return 'Straight (直地)';
+            case 'across': return 'Across (橫越)'; case 'from': return 'From (對面)'; case 'asked': return 'Asked (過去式)';
+            case 'to': return 'To (不定詞)'; case 'for': return 'For (為了)'; default: return key.toUpperCase();
         }
     }
     function getVerbIcon(key) {
         switch (key) {
             case 'take': return '🖐️'; case 'ride': return '🚴'; case 'by': return '⏩';
             case 'on': return '⬆️'; case 'get': return '➡️'; case 'off': return '⬇️';
-            case 'foot': return '🦶'; default: return '❓';
+            case 'foot': return '🦶'; case 'going': return '🏃'; case 'straight': return '🛣️';
+            case 'across': return '↔️'; case 'from': return '🔙'; case 'asked': return '📜';
+            case 'to': return '🎯'; case 'for': return '🎁'; default: return '❓';
         }
     }
     function getVerbType(key) {
-        if (['take', 'ride', 'get'].includes(key)) return '動詞';
-        if (['by', 'on', 'off'].includes(key)) return '介系詞';
+        if (['take', 'ride', 'get', 'going', 'asked'].includes(key)) return '動詞';
+        if (['by', 'on', 'off', 'from', 'for'].includes(key)) return '介系詞';
+        if (['across'].includes(key)) return '介系詞片語';
+        if (['straight'].includes(key)) return '方向';
+        if (['to'].includes(key)) return '不定詞';
         if (['foot', 'metro', 'taxi', 'bike', 'ship', 'scooter'].includes(key)) return '載具';
         return '其他';
     }
@@ -561,7 +626,7 @@
 
         // 隨機組合選項
         const requiredOptions = [
-            { key: currentChallenge.targetVehicle, text: currentChallenge.vehicleText, icon: currentChallenge.icon, type: 'vehicle' },
+            { key: currentChallenge.targetVehicle, text: getVerbText(currentChallenge.targetVehicle), icon: getVerbIcon(currentChallenge.targetVehicle), type: getVerbType(currentChallenge.targetVehicle) },
             { key: currentChallenge.targetVerb, text: getVerbText(currentChallenge.targetVerb), icon: getVerbIcon(currentChallenge.targetVerb), type: getVerbType(currentChallenge.targetVerb) }
         ];
 
@@ -668,20 +733,28 @@
         if (filledCount === dropZones.length) {
             const currentChallenge = grammarData[currentGrammarIndex];
             
-            const verbKey = droppedKeys['動詞'] || droppedKeys['介系詞'];
-            const vehicleKey = droppedKeys['載具'] || droppedKeys['方式'];
-            
-            // 檢查 targetVerb (動詞/介系詞) 正確性
-            if (verbKey !== currentChallenge.targetVerb) { isCorrect = false; }
-            // 檢查 targetVehicle/方式 (載具/方式/介系詞片語) 正確性
-            if (vehicleKey !== currentChallenge.targetVehicle) { isCorrect = false; }
-            
-            // 處理 get off 這種雙欄位動詞片語
-            if (currentChallenge.targetVerb === 'get' && currentChallenge.targetVehicle === 'off') {
-                if (droppedKeys['動詞'] !== 'get' || droppedKeys['介系詞'] !== 'off') {
+            // 由於欄位命名可能不同 (動詞/介系詞片語/方向)，我們使用目標鍵值進行精確檢查
+            const targetKeys = {
+                '動詞': currentChallenge.targetVerb,
+                '介系詞': currentChallenge.targetVerb,
+                '介系詞片語': currentChallenge.targetVerb,
+                '不定詞': currentChallenge.targetVehicle,
+                '載具': currentChallenge.targetVehicle,
+                '方式': currentChallenge.targetVehicle,
+                '方向': currentChallenge.targetVehicle,
+                '地點': currentChallenge.targetVehicle,
+                '片語': currentChallenge.targetVehicle
+            };
+
+            dropZones.forEach(zone => {
+                const type = zone.dataset.targetType;
+                const droppedKey = droppedKeys[type];
+                const expectedKey = targetKeys[type];
+
+                if (expectedKey && droppedKey !== expectedKey) {
                     isCorrect = false;
                 }
-            }
+            });
 
 
             // 顯示結果
